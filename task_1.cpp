@@ -9,9 +9,15 @@
 using namespace Eigen;
 using namespace std;
 
+/*
+• Load the image as an Eigen matrix with size m x n. Each entry in the matrix corresponds
+to a pixel on the screen and takes a value somewhere between 0 (black) and 255 (white).
+Report the size of the matrix.
+*/
+
 int main(int argc, char* argv[]) {
     // LOAD IMAGE FILE
-    const char* imagePath = "/home/stefano/Challenge1/resource/Albert_Einstein_Head.jpg";
+    const char* imagePath = argv[1];
     int width, height, channels;
     unsigned char* imageData = stbi_load(imagePath, &width, &height, &channels, 1);
     if (!imageData) {
