@@ -46,27 +46,27 @@ int main(int argc, char* argv[]) {
     stbi_image_free(imageData);
     cout << "Image loaded correctly. The size of the matrix is " << imageMatrix.rows() << "x" << imageMatrix.cols() << endl;
 
-    // BUILD THE A1 MATRIX OF THE FILTER av2 - TO FIX (TOO SLOW)
-    double kernelValue = 1.0 / 9.0;
-    SparseMatrix<double> A1(width * height, width * height);
-    for (int i = 0; i < width * height; i++) {
-        A1.insert(i, i) = kernelValue;
-        // Left neighbor
-        if (i > 0) A1.insert(i, i - 1) = kernelValue; 
-        // Right neighbor
-        if (i < width - 1) A1.insert(i, i + 1) = kernelValue; 
-        // Top neighbor
-        if (i > width) A1.insert(i, i - width) = kernelValue; 
-        // Bottom neighbor
-        if (i < height - 1) A1.insert(i, i + width) = kernelValue; 
-        // Top-left neighbor
-        if (i > width) A1.insert(i, i - width - 1) = kernelValue; 
-        // Top-right neighbor
-        if (i > width && i < width - 1) A1.insert(i, i - width + 1) = kernelValue; 
-        // Bottom-left neighbor
-        if (i < height - 1 && i > 0) A1.insert(i, i + width - 1) = kernelValue; 
-        // Bottom-right neighbor
-        if (i < height - 1 && i < width - 1) A1.insert(i, i + width + 1) = kernelValue;
+    // BUILD THE A1 MATRIX OF THE FILTER av2
+    MatrixXd kernel(3, 3);
+    kernel << 0.0, -1.0, 0.0,
+                -1.0, 5.0, -1.0,
+                0.0, -1.0, 0.0;
+    SparseMatrix<double, RowMajor> A1(imageMatrix.size(), imageMatrix.size());
+    for(int i=0; i<imageMatrix.rows(); i++){
+        for(int j=0; j<imageMatrix.cols(); j++){
+            int row_index = (i*imageMatrix.cols())+j;
+            for(int v=0; v<kernel.rows(); v++){
+                for(int w=0; w<kernel.cols(); w++){
+                    int col_index = ((v - kernel.rows()/2) * imageMatrix.cols()) + (w - kernel.cols()/2) + row_index;
+                    int numberOfRow = row_index/imageMatrix.cols();
+                    int left_extreme = ((v - kernel.rows()/2)*imageMatrix.cols()) + (imageMatrix.cols()*numberOfRow);
+                    int right_extreme = ((v - kernel.rows()/2)*imageMatrix.cols()) + (imageMatrix.cols()*numberOfRow)  + imageMatrix.cols();                    
+                    if(col_index >= max(left_extreme, 0) && col_index < min(right_extreme, (int) A1.cols()) ){
+                        A1.insert(row_index, col_index) = kernel(v, w);
+                    }
+                }
+            }
+        }
     }
     A1.makeCompressed();
 
