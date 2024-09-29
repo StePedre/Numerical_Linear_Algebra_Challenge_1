@@ -18,42 +18,34 @@ using namespace Eigen;
 using namespace std;
 
 VectorXd perform_convolution(const MatrixXd &image_data, const MatrixXd &kernel) {
-    int rows = image_data.rows();
-    int cols = image_data.cols();
-    int kernel_rows = kernel.rows();
-    int kernel_cols = kernel.cols();
-
-    // Output matrix
-    MatrixXd output(rows, cols);
-    output.setZero(); // Initialize output with zeros
-
-    int kernel_center_row = kernel_rows / 2;
-    int kernel_center_col = kernel_cols / 2;
-
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            double sum = 0.0; // Accumulate the convolution result
-
-            // Apply the kernel
-            for (int v = 0; v < kernel_rows; v++) {
-                for (int w = 0; w < kernel_cols; w++) {
-                    int image_row = i + (v - kernel_center_row);
-                    int image_col = j + (w - kernel_center_col);
-
-                    // Ensure the pixel is within the image bounds
-                    if (image_row >= 0 && image_row < rows && image_col >= 0 && image_col < cols) {
-                        sum += image_data(image_row, image_col) * kernel(v, w);
+    SparseMatrix<double, RowMajor> A_2_sparse(image_data.size(), image_data.size());
+    for(int i=0; i<image_data.rows(); i++){
+        for(int j=0; j<image_data.cols(); j++){
+            int row_index = (i*image_data.cols())+j;
+            for(int v=0; v<kernel.rows(); v++){
+                for(int w=0; w<kernel.cols(); w++){
+                    int col_index = ((v - kernel.rows()/2) * image_data.cols()) + (w - kernel.cols()/2) + row_index;
+                    int numberOfRow = row_index/image_data.cols();
+                    int left_extreme = ((v - kernel.rows()/2)*image_data.cols()) + (image_data.cols()*numberOfRow);
+                    int right_extreme = ((v - kernel.rows()/2)*image_data.cols()) + (image_data.cols()*numberOfRow)  + image_data.cols();                    
+                    if(col_index >= max(left_extreme, 0) && col_index < min(right_extreme, (int) A_2_sparse.cols()) ){
+                        A_2_sparse.insert(row_index, col_index) = kernel(v, w);
                     }
                 }
             }
-            sum = std::min(sum, 1.0);
-            sum = std::max(sum, 0.0);
-            output(i, j) = sum; // Store the result in the output matrix
         }
     }
+    cout << "Zero entries in A_2: " << A_2_sparse.size() - A_2_sparse.nonZeros() << endl;
+    A_2_sparse.makeCompressed();
 
-    // Flatten the output to a VectorXd
-    return Map<VectorXd>(output.data(), output.size());
+
+    Matrix<double, Dynamic, Dynamic, RowMajor> image_row_major = image_data;
+    VectorXd image_vector = Map<VectorXd>(image_row_major.data(), image_row_major.size());
+
+    MatrixXd multiplication = A_2_sparse * image_vector;
+    Matrix<double, Dynamic, Dynamic, RowMajor> multiplication_row_major = multiplication;
+
+    return Map<VectorXd>(multiplication_row_major.data(), multiplication_row_major.size());
 }
 
 VectorXd perform_H_sh_2(const MatrixXd &image_data){
@@ -64,8 +56,25 @@ VectorXd perform_H_sh_2(const MatrixXd &image_data){
     return perform_convolution(image_data, kernel);
 }
 
+VectorXd perform_H_av_2(const MatrixXd &image_data){
+    MatrixXd kernel(3, 3);
+    kernel << 0.0, 1.0, 0.0,
+                1.0, 4.0, 1.0,
+                0.0, 1.0, 0.0;
+    kernel *= (1.0/8.0);
+    cout << kernel << endl;
+    return perform_convolution(image_data, kernel);
+}
 
-
+VectorXd perform_H_av_1(const MatrixXd &image_data){
+    MatrixXd kernel= MatrixXd(3, 3);
+    kernel << 1.0, 1.0, 1.0,
+                1.0, 1.0, 1.0,
+                1.0, 1.0, 1.0;
+    kernel *= (1.0/9.0);
+    cout << kernel << endl;
+    return perform_convolution(image_data, kernel);
+}
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -99,8 +108,8 @@ int main(int argc, char* argv[]) {
     // Free memory!!!
     stbi_image_free(image_data);
 
-    VectorXd sharpened = perform_H_sh_2(original);
-    MatrixXd reshaped = Map<MatrixXd>(sharpened.data(), height, width);
+    VectorXd sharpened = perform_H_av_1(original);
+    Matrix<double, Dynamic, Dynamic, RowMajor> reshaped = Map<Matrix<double, Dynamic, Dynamic, RowMajor>>(sharpened.data(), height, width);
 
     Matrix<unsigned char, Dynamic, Dynamic, RowMajor> sharpened_image(height, width);
     // Use Eigen's unaryExpr to map the grayscale values (0.0 to 1.0) to 0 to 255
