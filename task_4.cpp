@@ -48,9 +48,7 @@ int main(int argc, char* argv[]) {
 
     // BUILD THE A1 MATRIX OF THE FILTER av2
     MatrixXd kernel(3, 3);
-    kernel << 0.0, -1.0, 0.0,
-                -1.0, 5.0, -1.0,
-                0.0, -1.0, 0.0;
+    kernel.setConstant(1.0 / 9.0);
     SparseMatrix<double, RowMajor> A1(imageMatrix.size(), imageMatrix.size());
     for(int i=0; i<imageMatrix.rows(); i++){
         for(int j=0; j<imageMatrix.cols(); j++){
