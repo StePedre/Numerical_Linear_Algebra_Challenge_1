@@ -1,7 +1,9 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <iostream>
+#include <algorithm>
 #include <cstdlib>
+#include <cmath>  // For std::fabs
 
 // from https://github.com/nothings/stb/tree/master
 #define STB_IMAGE_IMPLEMENTATION
@@ -15,23 +17,55 @@
 using namespace Eigen;
 using namespace std;
 
-VectorXd perform_convolution(MatrixXd &image_data, MatrixXd &kernel){
-    MatrixXd A_2(image_data.size(), image_data.size());
-    for(int i=0; i<kernel.rows(); i++){
-        for(int j=0; j<kernel.cols(); j++){
-            int diagonal_num = ((i - (kernel.rows()/2)) * image_data.cols()) + (j - (kernel.cols()/2));
-            cout << diagonal_num << " " <<A_2.diagonal(diagonal_num).size() << endl;
-            A_2.diagonal(diagonal_num) = VectorXd::Constant(A_2.diagonal(diagonal_num).size(), kernel(i,j));
+VectorXd perform_convolution(const MatrixXd &image_data, const MatrixXd &kernel) {
+    int rows = image_data.rows();
+    int cols = image_data.cols();
+    int kernel_rows = kernel.rows();
+    int kernel_cols = kernel.cols();
+
+    // Output matrix
+    MatrixXd output(rows, cols);
+    output.setZero(); // Initialize output with zeros
+
+    int kernel_center_row = kernel_rows / 2;
+    int kernel_center_col = kernel_cols / 2;
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            double sum = 0.0; // Accumulate the convolution result
+
+            // Apply the kernel
+            for (int v = 0; v < kernel_rows; v++) {
+                for (int w = 0; w < kernel_cols; w++) {
+                    int image_row = i + (v - kernel_center_row);
+                    int image_col = j + (w - kernel_center_col);
+
+                    // Ensure the pixel is within the image bounds
+                    if (image_row >= 0 && image_row < rows && image_col >= 0 && image_col < cols) {
+                        sum += image_data(image_row, image_col) * kernel(v, w);
+                    }
+                }
+            }
+            sum = std::min(sum, 1.0);
+            sum = std::max(sum, 0.0);
+            output(i, j) = sum; // Store the result in the output matrix
         }
     }
 
-    SparseMatrix<double, RowMajor> A_2_sparse = A_2.sparseView();
-
-    cout << "Zero entries in A_2: " << A_2_sparse.size() - A_2_sparse.nonZeros() << endl;
-
-    MatrixXd multiplication = A_2_sparse * Map<VectorXd>(image_data.data(), image_data.size()); 
-    return Map<VectorXd>(multiplication.data(), image_data.size());
+    // Flatten the output to a VectorXd
+    return Map<VectorXd>(output.data(), output.size());
 }
+
+VectorXd perform_H_sh_2(const MatrixXd &image_data){
+    MatrixXd kernel(3, 3);
+    kernel << 0.0, -1.0, 0.0,
+                -1.0, 5.0, -1.0,
+                0.0, -1.0, 0.0;
+    return perform_convolution(image_data, kernel);
+}
+
+
+
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -59,19 +93,13 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
             int index = (i * width + j) * channels;  // 1 channel (Greyscale) 3 channels (RGB)
-            original(i,j) = static_cast<double>(image_data[index]) / 255.0;
+            original(i,j) = static_cast<double>(image_data[index]) / 255;
         }
     }
     // Free memory!!!
     stbi_image_free(image_data);
 
-    MatrixXd kernel(3, 3);
-    kernel << 0.0, 1.0, 0.0,
-                1.0, 1.0, 1.0,
-                0.0, 1.0, 0.0;
-    kernel *= (1.0/5.0);
-    cout << kernel << endl;
-    VectorXd sharpened = perform_convolution(original, kernel);
+    VectorXd sharpened = perform_H_sh_2(original);
     MatrixXd reshaped = Map<MatrixXd>(sharpened.data(), height, width);
 
     Matrix<unsigned char, Dynamic, Dynamic, RowMajor> sharpened_image(height, width);
@@ -92,4 +120,3 @@ int main(int argc, char* argv[]) {
 
     return 0;  
 }
-
