@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
     // BUILD THE A2 MATRIX OF THE FILTER sh2
     MatrixXd kernel(3, 3);
     kernel << 0.0, -3.0, 0.0,
-                -1.0, -9.0, -1.0,
+                -1.0, 9.0, -3.0,
                 0.0, -1.0, 0.0;
     SparseMatrix<double, RowMajor> A2(original.size(), original.size());
     for(int i=0; i<original.rows(); i++){
