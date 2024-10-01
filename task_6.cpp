@@ -43,10 +43,9 @@ VectorXd perform_convolution(const MatrixXd &image_data, const MatrixXd &kernel)
     Matrix<double, Dynamic, Dynamic, RowMajor> image_row_major = image_data;
     VectorXd image_vector = Map<VectorXd>(image_row_major.data(), image_row_major.size());
 
-    MatrixXd multiplication = A_2_sparse * image_vector;
-    Matrix<double, Dynamic, Dynamic, RowMajor> multiplication_row_major = multiplication;
+    VectorXd multiplication = A_2_sparse * image_vector;
 
-    return Map<VectorXd>(multiplication_row_major.data(), multiplication_row_major.size());
+    return multiplication;
 }
 
 VectorXd perform_H_sh_2(const MatrixXd &image_data){
