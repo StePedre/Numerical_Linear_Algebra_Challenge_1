@@ -11,8 +11,8 @@ using namespace Eigen;
 using namespace std;
 
 /*
-• Apply the previous sharpening filter to the original image by performing the matrix vector
-multiplication A2v. Export and upload the resulting image.
+• Apply the previous edge detection filter to the original image by performing the matrix
+vector multiplication A3 v. Export and upload the resulting image.
 */
 
 
@@ -47,12 +47,12 @@ int main(int argc, char* argv[]) {
     // Free memory!!!
     stbi_image_free(image_data);
 
-    // BUILD THE A2 MATRIX OF THE FILTER sh2
+    // BUILD THE A3 MATRIX OF THE FILTER lap
     MatrixXd kernel(3, 3);
-    kernel << 0.0, -3.0, 0.0,
-                -1.0, 9.0, -3.0,
+    kernel << 0.0, -1.0, 0.0,
+                -1.0, 4.0, -1.0,
                 0.0, -1.0, 0.0;
-    SparseMatrix<double, RowMajor> A2(original.size(), original.size());
+    SparseMatrix<double, RowMajor> A3(original.size(), original.size());
     for(int i=0; i<original.rows(); i++){
         for(int j=0; j<original.cols(); j++){
             int row_index = (i*original.cols())+j;
@@ -62,33 +62,33 @@ int main(int argc, char* argv[]) {
                     int numberOfRow = row_index/original.cols();
                     int left_extreme = ((v - kernel.rows()/2)*original.cols()) + (original.cols()*numberOfRow);
                     int right_extreme = ((v - kernel.rows()/2)*original.cols()) + (original.cols()*numberOfRow)  + original.cols();                    
-                    if(col_index >= max(left_extreme, 0) && col_index < min(right_extreme, (int) A2.cols()) ){
-                        A2.insert(row_index, col_index) = kernel(v, w);
+                    if(col_index >= max(left_extreme, 0) && col_index < min(right_extreme, (int) A3.cols()) ){
+                        A3.insert(row_index, col_index) = kernel(v, w);
                     }
                 }
             }
         }
     }
-    A2.makeCompressed();
+    A3.makeCompressed();
 
     Matrix<double, Dynamic, Dynamic, RowMajor> image_row_major = original;
     VectorXd image_vector = Map<VectorXd>(image_row_major.data(), image_row_major.size());
-    MatrixXd multiplication = A2 * image_vector;
+    MatrixXd multiplication = A3 * image_vector;
     Matrix<double, Dynamic, Dynamic, RowMajor> multiplication_row_major = multiplication;
     VectorXd multiplicationVector = Map<VectorXd>(multiplication_row_major.data(), multiplication_row_major.size());
-    Matrix<double, Dynamic, Dynamic, RowMajor> sharpened_matrix = Map<Matrix<double, Dynamic, Dynamic, RowMajor>>(multiplicationVector.data(), height, width);
+    Matrix<double, Dynamic, Dynamic, RowMajor> edge_detection_matrix = Map<Matrix<double, Dynamic, Dynamic, RowMajor>>(multiplicationVector.data(), height, width);
 
-    Matrix<unsigned char, Dynamic, Dynamic, RowMajor> sharpened_image(height, width);
-    sharpened_image = sharpened_matrix.unaryExpr([](double val) -> unsigned char {
+    Matrix<unsigned char, Dynamic, Dynamic, RowMajor> edge_detection_image(height, width);
+    edge_detection_image = edge_detection_matrix.unaryExpr([](double val) -> unsigned char {
         return static_cast<unsigned char>((max(0.0, min(val, 1.0))) * 255.0);
     });
     
-    const string output_image_path = "sharpened_image.png";
-    if (stbi_write_png(output_image_path.c_str(), width, height, 1, sharpened_image.data(), width) == 0) {
+    const string output_image_path = "edge_detection_image.png";
+    if (stbi_write_png(output_image_path.c_str(), width, height, 1, edge_detection_image.data(), width) == 0) {
         cerr << "Error: Could not save rotated image" << endl;
         return 1;
     }
 
-    cout << "Sharpened image saved to " << output_image_path << endl;
+    cout << "Edge detection image saved to " << output_image_path << endl;
     return 0;
 }
