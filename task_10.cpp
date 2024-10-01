@@ -49,31 +49,11 @@ VectorXd perform_convolution(const MatrixXd &image_data, const MatrixXd &kernel)
     return Map<VectorXd>(multiplication_row_major.data(), multiplication_row_major.size());
 }
 
-VectorXd perform_H_sh_2(const MatrixXd &image_data){
+VectorXd perform_H_lap(const MatrixXd &image_data){
     MatrixXd kernel(3, 3);
     kernel << 0.0, -1.0, 0.0,
-                -1.0, 5.0, -1.0,
+                -1.0, 4.0, -1.0,
                 0.0, -1.0, 0.0;
-    return perform_convolution(image_data, kernel);
-}
-
-VectorXd perform_H_av_2(const MatrixXd &image_data){
-    MatrixXd kernel(3, 3);
-    kernel << 0.0, 1.0, 0.0,
-                1.0, 4.0, 1.0,
-                0.0, 1.0, 0.0;
-    kernel *= (1.0/8.0);
-    cout << kernel << endl;
-    return perform_convolution(image_data, kernel);
-}
-
-VectorXd perform_H_av_1(const MatrixXd &image_data){
-    MatrixXd kernel= MatrixXd(3, 3);
-    kernel << 1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0;
-    kernel *= (1.0/9.0);
-    cout << kernel << endl;
     return perform_convolution(image_data, kernel);
 }
 
@@ -109,7 +89,7 @@ int main(int argc, char* argv[]) {
     // Free memory!!!
     stbi_image_free(image_data);
 
-    VectorXd sharpened = perform_H_sh_2(original);
+    VectorXd sharpened = perform_H_lap(original);
     Matrix<double, Dynamic, Dynamic, RowMajor> reshaped = Map<Matrix<double, Dynamic, Dynamic, RowMajor>>(sharpened.data(), height, width);
 
     Matrix<unsigned char, Dynamic, Dynamic, RowMajor> sharpened_image(height, width);
