@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
     const string history_path = "output/history";
     const string tollerance = "-tol 1.0e-9";
     const string command = test_1_path + " " + output_a_2_market_path + " " + output_w_market_path + " " + result_path + " " + history_path + " " + tollerance;
-    system("module load lis");
+    system("mpicc -DUSE_MPI -I${mkLisInc} -L${mkLisLib} -llis ./resource/lis-2.0.34/test/test1.c -o ./resource/lis-2.0.34/test/test1");
     system(command.c_str());
 
     /*
