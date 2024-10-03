@@ -184,7 +184,6 @@ int main(int argc, char *argv[])
     fprintf(out, "%d %d %d\n", a_2.rows(), a_2.cols(), a_2.nonZeros());
     for (int k = 0; k < a_2.outerSize(); ++k) {
         for (Eigen::SparseMatrix<double, RowMajor>::InnerIterator it(a_2, k); it; ++it) {
-    
             fprintf(out, "%d %d  %.20e\n", it.row() + 1, it.col() + 1, it.value());
         }
     }
@@ -207,6 +206,7 @@ int main(int argc, char *argv[])
     const string history_path = "output/history";
     const string tollerance = "-tol 1.0e-9";
     const string command = test_1_path + " " + output_a_2_market_path + " " + output_w_market_path + " " + result_path + " " + history_path + " " + tollerance;
+    system("module load lis");
     system(command.c_str());
 
     /*
@@ -259,9 +259,94 @@ int main(int argc, char *argv[])
     }
 
     cout << "Sharpened image saved to " << output_x_path << endl;
+
+    /*
+                                        TASK 10
+        Write the convolution operation corresponding to the detection kernel Hlap 
+        as a matrix vector multiplication by a matrix A3 having size mn × mn. 
+        Is matrix A3 symmetric?
+    */
+    cout << "********* TASK 10 *********" << endl;
+    MatrixXd h_lap(3, 3);
+    h_lap << 0.0, -1.0, 0.0,
+        -1.0, 4.0, -1.0,
+        0.0, -1.0, 0.0;
+    SparseMatrix<double, RowMajor> a_3 = generate_convoultion_matrix(h_lap, height, width);
+
+    cout << "Is A_3 symmetric? : " << (a_3.isApprox(a_3.transpose()) == 1 ? "true" : "false") << endl;
+
+     /*
+                                        TASK 11
+        Apply the previous edge detection filter to the original image 
+        by performing the matrix vector multiplication A3 v. Export and upload the resulting image.
+    */
+    cout << "********* TASK 11 *********" << endl;
+    VectorXd a_3_v_result = a_3 * v;
+
+    Matrix<unsigned char, Dynamic, Dynamic, RowMajor> edge_image_char(height, width);
+    edge_image_char = a_3_v_result.unaryExpr([](double val) -> unsigned char
+                                                  { return static_cast<unsigned char>(max(0.0, min(val, 1.0)) * 255.0); });
+
+    const string output_edge_path = "output/edge_image.png";
+    if (stbi_write_png(output_edge_path.c_str(), width, height, 1, edge_image_char.data(), width) == 0)
+    {
+        cerr << "Error: Could not save edge image" << endl;
+        return 1;
+    }
+
+    cout << "Edge image saved to " << output_edge_path << endl;
+
+    /*
+                                        TASK 12
+        Using a suitable iterative solver available in the Eigen library compute 
+        the approximate solution of the linear system (I+A3)y = w, where I denotes 
+        the identity matrix, prescribing a tolerance of 10−10. Report here the iteration 
+        count and the final residual.
+
+    */
+    cout << "********* TASK 12 *********" << endl;
+
+    SparseMatrix<double, RowMajor> sparse_identiy(a_3.rows(), a_3.cols());
+    sparse_identiy.setIdentity();
+    SparseMatrix<double, RowMajor> I_plus_A3 = sparse_identiy + a_3;
+
+    ConjugateGradient<SparseMatrix<double, RowMajor>, Lower|Upper> solver;
+    solver.setTolerance(1e-10);
+    solver.compute(I_plus_A3);
+
+    if (solver.info() != Success) {
+        cerr << "Decomposition failed!" << endl;
+        return 1;
+    }
+    VectorXd y = solver.solve(w);
+
+    if (solver.info() != Success) {
+        cerr << "Solving failed!" << endl;
+        return 1;
+    }
+    cout << "Number of iterations: " << solver.iterations() << endl;
+    cout << "Final residual: " << solver.error() << endl;
+
+    /*
+                                        TASK 13
+        Convert the image stored in the vector y into a .png image and upload it.
+
+    */
+    cout << "********* TASK 13 *********" << endl;
+
+    Matrix<unsigned char, Dynamic, Dynamic, RowMajor> y_image_char(height, width);
+    y_image_char =y.unaryExpr([](double val) -> unsigned char
+                                                  { return static_cast<unsigned char>(max(0.0, min(val, 1.0)) * 255.0); });
+
+    const string output_y_path = "output/y_image.png";
+    if (stbi_write_png(output_y_path.c_str(), width, height, 1, y_image_char.data(), width) == 0)
+    {
+        cerr << "Error: Could not save noisy image" << endl;
+        return 1;
+    }
+
+    cout << "Y image saved to " << output_y_path << endl;
     
-    
-   
     return 0;
 }
 
