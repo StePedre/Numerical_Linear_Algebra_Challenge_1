@@ -134,8 +134,8 @@ int main(int argc, char *argv[])
     */
     cout << "********* TASK 6 *********" << endl;
     MatrixXd h_sh_2(3, 3);
-    h_sh_2 << 0.0, -1.0, 0.0,
-        -1.0, 5.0, -1.0,
+    h_sh_2 << 0.0, -3.0, 0.0,
+        -1.0, 9.0, -3.0,
         0.0, -1.0, 0.0;
     SparseMatrix<double, RowMajor> a_2 = generate_convoultion_matrix(h_sh_2, height, width);
 
@@ -221,17 +221,17 @@ int main(int argc, char *argv[])
         return -1;
     }
     std::string line;
-    std::getline(file, line); // Read the first line (header)
+    std::getline(file, line); 
 
-    // Check if the header matches the expected format
+    
     if (line != "%%MatrixMarket vector coordinate real general") {
         std::cerr << "Invalid Matrix Market format!" << std::endl;
         return -1;
     }
-    // Read dimensions
+    
     std::getline(file, line);
     std::istringstream iss(line);
-    int nrows; // Number of rows and number of non-zero entries
+    int nrows; 
     iss >> nrows;
 
     VectorXd x(nrows);
@@ -240,11 +240,11 @@ int main(int argc, char *argv[])
         std::istringstream entryStream(line);
         int index;
         double value;
-        entryStream >> index >> value; // Read index and value
-        x(index-1) = value; // Store only the value
+        entryStream >> index >> value; 
+        x(index-1) = value; 
     }
 
-    // Close the file
+    
     file.close();
 
     Matrix<unsigned char, Dynamic, Dynamic, RowMajor> x_image_char(height, width);
