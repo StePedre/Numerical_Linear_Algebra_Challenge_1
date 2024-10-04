@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
     h_av_2 *= (1.0 / 8.0);
     SparseMatrix<double, RowMajor> a_1 = generate_convoultion_matrix(h_av_2, height, width);
 
-    cout << "Zero entries in A_1: " << a_1.size() - a_1.nonZeros() << endl;
+    cout << "Non zero entries in A_1: " << a_1.nonZeros() << endl;
 
     /*
                                         TASK 5
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
         0.0, -1.0, 0.0;
     SparseMatrix<double, RowMajor> a_2 = generate_convoultion_matrix(h_sh_2, height, width);
 
-    cout << "Zero entries in A_2: " << a_2.size() - a_2.nonZeros() << endl;
+    cout << "Non zero entries in A_2: " << a_2.nonZeros() << endl;
     cout << "Is A_2 symmetric? : " << (a_2.isApprox(a_2.transpose()) == 1 ? "true" : "false") << endl;
 
     /*
@@ -166,8 +166,8 @@ int main(int argc, char *argv[])
     /*
                                         TASK 8
         Export the Eigen matrix A2 and vector w in the .mtx format. Using a suitable i
-        terative solver and preconditioner technique available in the LIS library compute 
-        the approximate solution to the linear system A2x = w prescribing a tolerance of 10−9. 
+        terative solver and preconditioner technique available in the LIS library compute
+        the approximate solution to the linear system A2x = w prescribing a tolerance of 10−9.
         eport here the iteration count and the final residual.
 
     */
@@ -175,15 +175,18 @@ int main(int argc, char *argv[])
 
     const string output_a_2_market_path = "output/a_2.mtx";
     remove(output_a_2_market_path.c_str());
-    FILE* out = fopen(output_a_2_market_path.c_str(), "w");
-    if (!out) {
-        std::cerr << "Error opening file: " <<  output_a_2_market_path << std::endl;
+    FILE *out = fopen(output_a_2_market_path.c_str(), "w");
+    if (!out)
+    {
+        std::cerr << "Error opening file: " << output_a_2_market_path << std::endl;
         return -1;
     }
     fprintf(out, "%%%%MatrixMarket matrix coordinate real general\n");
     fprintf(out, "%d %d %d\n", a_2.rows(), a_2.cols(), a_2.nonZeros());
-    for (int k = 0; k < a_2.outerSize(); ++k) {
-        for (Eigen::SparseMatrix<double, RowMajor>::InnerIterator it(a_2, k); it; ++it) {
+    for (int k = 0; k < a_2.outerSize(); ++k)
+    {
+        for (Eigen::SparseMatrix<double, RowMajor>::InnerIterator it(a_2, k); it; ++it)
+        {
             fprintf(out, "%d %d  %.20e\n", it.row() + 1, it.col() + 1, it.value());
         }
     }
@@ -192,16 +195,17 @@ int main(int argc, char *argv[])
 
     const string output_w_market_path = "output/w.mtx";
     remove(output_w_market_path.c_str());
-    out = fopen(output_w_market_path.c_str(),"w");
-    fprintf(out,"%%%%MatrixMarket vector coordinate real general\n");
-    fprintf(out,"%d\n", w.size());
-    for (int i=0; i<w.size(); i++) {
-       fprintf(out,"%d %.20e\n", i ,w(i));
+    out = fopen(output_w_market_path.c_str(), "w");
+    fprintf(out, "%%%%MatrixMarket vector coordinate real general\n");
+    fprintf(out, "%d\n", w.size());
+    for (int i = 0; i < w.size(); i++)
+    {
+        fprintf(out, "%d %.20e\n", i, w(i));
     }
     fclose(out);
     cout << "W vector saved to " << output_w_market_path << endl;
 
-    const string test_1_path ="./resource/lis-2.0.34/test/test1";
+    const string test_1_path = "./resource/lis-2.0.34/test/test1";
     const string result_path = "output/x.mtx";
     const string history_path = "output/history";
     const string tollerance = "-tol 1.0e-9";
@@ -211,45 +215,46 @@ int main(int argc, char *argv[])
 
     /*
                                         TASK 9
-        Import the previous approximate solution vector x in Eigen and 
+        Import the previous approximate solution vector x in Eigen and
         then convert it into a .png image. Upload the resulting file here.
     */
     cout << "********* TASK 9 *********" << endl;
     std::ifstream file(result_path);
-    if (!file.is_open()) {
+    if (!file.is_open())
+    {
         std::cerr << "Error opening file: " << result_path << std::endl;
         return -1;
     }
     std::string line;
-    std::getline(file, line); 
+    std::getline(file, line);
 
-    
-    if (line != "%%MatrixMarket vector coordinate real general") {
+    if (line != "%%MatrixMarket vector coordinate real general")
+    {
         std::cerr << "Invalid Matrix Market format!" << std::endl;
         return -1;
     }
-    
+
     std::getline(file, line);
     std::istringstream iss(line);
-    int nrows; 
+    int nrows;
     iss >> nrows;
 
     VectorXd x(nrows);
-    for (int i = 0; i < nrows; ++i) {
+    for (int i = 0; i < nrows; ++i)
+    {
         std::getline(file, line);
         std::istringstream entryStream(line);
         int index;
         double value;
-        entryStream >> index >> value; 
-        x(index-1) = value; 
+        entryStream >> index >> value;
+        x(index - 1) = value;
     }
 
-    
     file.close();
 
     Matrix<unsigned char, Dynamic, Dynamic, RowMajor> x_image_char(height, width);
-    x_image_char =x.unaryExpr([](double val) -> unsigned char
-                                                  { return static_cast<unsigned char>(max(0.0, min(val, 1.0)) * 255.0); });
+    x_image_char = x.unaryExpr([](double val) -> unsigned char
+                               { return static_cast<unsigned char>(max(0.0, min(val, 1.0)) * 255.0); });
 
     const string output_x_path = "output/x_image.png";
     if (stbi_write_png(output_x_path.c_str(), width, height, 1, x_image_char.data(), width) == 0)
@@ -262,8 +267,8 @@ int main(int argc, char *argv[])
 
     /*
                                         TASK 10
-        Write the convolution operation corresponding to the detection kernel Hlap 
-        as a matrix vector multiplication by a matrix A3 having size mn × mn. 
+        Write the convolution operation corresponding to the detection kernel Hlap
+        as a matrix vector multiplication by a matrix A3 having size mn × mn.
         Is matrix A3 symmetric?
     */
     cout << "********* TASK 10 *********" << endl;
@@ -275,17 +280,17 @@ int main(int argc, char *argv[])
 
     cout << "Is A_3 symmetric? : " << (a_3.isApprox(a_3.transpose()) == 1 ? "true" : "false") << endl;
 
-     /*
-                                        TASK 11
-        Apply the previous edge detection filter to the original image 
-        by performing the matrix vector multiplication A3 v. Export and upload the resulting image.
-    */
+    /*
+                                       TASK 11
+       Apply the previous edge detection filter to the original image
+       by performing the matrix vector multiplication A3 v. Export and upload the resulting image.
+   */
     cout << "********* TASK 11 *********" << endl;
     VectorXd a_3_v_result = a_3 * v;
 
     Matrix<unsigned char, Dynamic, Dynamic, RowMajor> edge_image_char(height, width);
     edge_image_char = a_3_v_result.unaryExpr([](double val) -> unsigned char
-                                                  { return static_cast<unsigned char>(max(0.0, min(val, 1.0)) * 255.0); });
+                                             { return static_cast<unsigned char>(max(0.0, min(val, 1.0)) * 255.0); });
 
     const string output_edge_path = "output/edge_image.png";
     if (stbi_write_png(output_edge_path.c_str(), width, height, 1, edge_image_char.data(), width) == 0)
@@ -298,9 +303,9 @@ int main(int argc, char *argv[])
 
     /*
                                         TASK 12
-        Using a suitable iterative solver available in the Eigen library compute 
-        the approximate solution of the linear system (I+A3)y = w, where I denotes 
-        the identity matrix, prescribing a tolerance of 10−10. Report here the iteration 
+        Using a suitable iterative solver available in the Eigen library compute
+        the approximate solution of the linear system (I+A3)y = w, where I denotes
+        the identity matrix, prescribing a tolerance of 10−10. Report here the iteration
         count and the final residual.
 
     */
@@ -310,17 +315,19 @@ int main(int argc, char *argv[])
     sparse_identiy.setIdentity();
     SparseMatrix<double, RowMajor> I_plus_A3 = sparse_identiy + a_3;
 
-    ConjugateGradient<SparseMatrix<double, RowMajor>, Lower|Upper> solver;
+    ConjugateGradient<SparseMatrix<double, RowMajor>, Lower | Upper> solver;
     solver.setTolerance(1e-10);
     solver.compute(I_plus_A3);
 
-    if (solver.info() != Success) {
+    if (solver.info() != Success)
+    {
         cerr << "Decomposition failed!" << endl;
         return 1;
     }
     VectorXd y = solver.solve(w);
 
-    if (solver.info() != Success) {
+    if (solver.info() != Success)
+    {
         cerr << "Solving failed!" << endl;
         return 1;
     }
@@ -335,8 +342,8 @@ int main(int argc, char *argv[])
     cout << "********* TASK 13 *********" << endl;
 
     Matrix<unsigned char, Dynamic, Dynamic, RowMajor> y_image_char(height, width);
-    y_image_char =y.unaryExpr([](double val) -> unsigned char
-                                                  { return static_cast<unsigned char>(max(0.0, min(val, 1.0)) * 255.0); });
+    y_image_char = y.unaryExpr([](double val) -> unsigned char
+                               { return static_cast<unsigned char>(max(0.0, min(val, 1.0)) * 255.0); });
 
     const string output_y_path = "output/y_image.png";
     if (stbi_write_png(output_y_path.c_str(), width, height, 1, y_image_char.data(), width) == 0)
@@ -346,7 +353,7 @@ int main(int argc, char *argv[])
     }
 
     cout << "Y image saved to " << output_y_path << endl;
-    
+
     return 0;
 }
 
@@ -369,7 +376,8 @@ SparseMatrix<double, RowMajor> generate_convoultion_matrix(const MatrixXd &kerne
                     int right_extreme = ((v - kernel.rows() / 2) * width) + (width * numberOfRow) + width;
                     if (col_index >= max(left_extreme, 0) && col_index < min(right_extreme, (int)convoultion_matrix.cols()))
                     {
-                        if(kernel(v, w) != 0.0){
+                        if (kernel(v, w) != 0.0)
+                        {
                             convoultion_matrix.insert(row_index, col_index) = kernel(v, w);
                         }
                     }
