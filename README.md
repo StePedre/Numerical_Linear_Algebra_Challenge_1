@@ -3,7 +3,7 @@
 **Team:** Ettore Cirillo, Angelo Notarnicola, Stefano Pedretti
 
 ## 📌 Overview
-This challenge was developed for the Numerical Linear Algebra course (A.A. 2024/2025). The main goal is to apply image filters and find the approximate solution of linear system to process a greyscale image.
+This challenge was developed for the Numerical Linear Algebra course (A.Y. 2024/2025). The main goal is to apply image filters and find the approximate solution of linear system to process a greyscale image.
 
 ## 🛠️ Technologies
 * **Language:** C++.
